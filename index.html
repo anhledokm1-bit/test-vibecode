@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Vibe Coder CV & Portfolio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            vibe: {
+              bg: '#08090d',
+              card: '#10121a',
+              cardHover: '#161925',
+              border: '#1f2438',
+              cyan: '#00f2fe',
+              purple: '#a855f7',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+            }
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px -4px rgba(0, 242, 254, 0.25)',
+            'glow-purple': '0 0 25px -4px rgba(168, 85, 247, 0.25)',
+            'glow-emerald': '0 0 20px -4px rgba(16, 185, 129, 0.25)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #08090d; }
+    ::-webkit-scrollbar-thumb { background: #1f2438; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #313854; }
+
+    /* Animated background canvas */
+    .bg-mesh {
+      background: radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.07) 0%, transparent 45%),
+                  radial-gradient(circle at 90% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 45%),
+                  radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+    }
+
+    /* Editable highlight when edit mode is ON */
+    body.is-editing [contenteditable="true"] {
+      outline: 1.5px dashed rgba(0, 242, 254, 0.5);
+      outline-offset: 3px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+      cursor: text;
+    }
+    body.is-editing [contenteditable="true"]:hover {
+      outline-color: #00f2fe;
+      background-color: rgba(0, 242, 254, 0.04);
+    }
+    body.is-editing [contenteditable="true"]:focus {
+      outline: 2px solid #00f2fe;
+      background-color: rgba(0, 242, 254, 0.08);
+    }
+
+    /* Print styling: spotless white background for corporate A4 */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #111827 !important;
+      }
+      .no-print, [data-no-print] {
+        display: none !important;
+      }
+      .print-clean {
+        background: #ffffff !important;
+        border-color: #e5e7eb !important;
+        box-shadow: none !important;
+        color: #111827 !important;
+      }
+      .text-white, .text-slate-200, .text-slate-300 {
+        color: #111827 !important;
+      }
+      .text-slate-400, .text-slate-500 {
+        color: #4b5563 !important;
+      }
+      [contenteditable="true"] {
+        outline: none !important;
+      }
+    }
+
+    /* Toast animation */
+    @keyframes slideIn {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast-anim {
+      animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+
+<body class="bg-vibe-bg text-slate-300 font-sans min-h-screen bg-mesh selection:bg-cyan-400 selection:text-black transition-colors duration-300">
+
+  <!-- Interactive Top Control Bar -->
+  <header class="no-print sticky top-0 z-40 backdrop-blur-xl bg-vibe-bg/85 border-b border-vibe-border">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      
+      <!-- Brand & Mode Indicator -->
+      <div class="flex items-center gap-3">
+        <div class="relative flex items-center justify-center">
+          <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping absolute opacity-75"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 relative"></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-mono text-xs sm:text-sm font-bold text-white tracking-wide">
+            <span class="text-cyan-400">~/vibe</span>-coder-cv
+          </span>
+          <span class="text-[10px] font-mono text-slate-500 hidden sm:inline" id="editStatusText">
+            Chế độ Xem (Nhấn "Sửa Trực Tiếp" để đổi nội dung)
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Live Edit Toggle Button -->
+        <button id="toggleEditBtn" onclick="toggleEditMode()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 shadow-sm">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          <span id="btnEditText">Sửa Trực Tiếp</span>
+        </button>
+
+        <!-- Save Button (Visible when editing) -->
+        <button id="saveDataBtn" onclick="saveCVData()" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i>
+          <span>Lưu Local</span>
+        </button>
+
+        <!-- Reset Button (Visible when editing) -->
+        <button id="resetDataBtn" onclick="resetDefaultData()" class="hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium transition text-rose-300 hover:bg-rose-500/10 border border-rose-500/30">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Khôi phục gốc</span>
+        </button>
+
+        <!-- Print / Export PDF -->
+        <button onclick="prepareAndPrint()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-slate-200 bg-vibe-card hover:bg-vibe-cardHover border border-vibe-border transition shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>In / PDF</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="no-print fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Container -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8" id="cvContentRoot">
+    
+    <!-- Hero / Profile Card -->
+    <section class="print-clean relative p-6 sm:p-8 rounded-2xl bg-vibe-card/90 border border-vibe-border backdrop-blur-xl shadow-xl overflow-hidden transition duration-300">
+      <!-- Glow Gradients -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+        
+        <!-- Left: Avatar & Intro -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div class="relative group">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-cyan-400 via-purple-500 to-emerald-400 p-0.5 shadow-glow-cyan transition duration-300 group-hover:scale-105">
+              <div class="w-full h-full bg-vibe-bg rounded-[14px] flex items-center justify-center overflow-hidden">
+                <span id="cvAvatar" contenteditable="false" data-editable="true" class="font-mono text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+                  RM
+                </span>
+              </div>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-vibe-bg rounded-full flex items-center justify-center shadow-glow-emerald" title="Sẵn sàng nhận cơ hội mới">
+              <span class="w-1.5 h-1.5 bg-white rounded-full"></span>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 id="cvName" contenteditable="false" data-editable="true" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Raymond (Huy)
+              </h1>
+              <span id="cvBadge" contenteditable="false" data-editable="true" class="px-2.5 py-0.5 text-xs font-mono rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                Senior Full-Stack & AI Engineer
+              </span>
+            </div>
+            
+            <p id="cvRole" contenteditable="false" data-editable="true" class="text-sm sm:text-base text-slate-300 font-medium">
+              Vibe Coding Specialist • Building Scalable Web & AI Systems
+            </p>
+            
+            <p id="cvBio" contenteditable="false" data-editable="true" class="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
+              Kỹ sư phát triển phần mềm với tư duy Vibe Coding tốc độ cao. Chuyên gia kết hợp các Agent AI (Antigravity, Gemini) để kiến tạo sản phẩm mượt mà, kiến trúc tinh gọn và tối ưu trải nghiệm người dùng cuối.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Contact info -->
+        <div class="flex flex-col gap-2 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-vibe-border md:pl-6 text-xs font-mono">
+          <div class="flex items-center gap-2 text-slate-300">
+            <i data-lucide="mail" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+            <span id="cvEmail" contenteditable="false" data-editable="true">raymond@vibecoding.dev</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <i data-lucide="github" class="w-4 h-4 text-purple-400 shrink-0"></i>
+            <span id="cvGithub" contenteditable="false" data-editable="true">github.com/raymondokok</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <i data-lucide="globe" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+            <span id="cvWeb" contenteditable="false" data-editable="true">raymond-vibe.portfolio</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-400">
+            <i data-lucide="map-pin" class="w-4 h-4 text-amber-400 shrink-0"></i>
+            <span id="cvLocation" contenteditable="false" data-editable="true">TP. Hồ Chí Minh, Việt Nam</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Interactive Terminal Command Bar -->
+    <section class="no-print print-clean rounded-2xl bg-vibe-card/70 border border-vibe-border p-4 font-mono text-xs overflow-hidden shadow-lg">
+      <div class="flex items-center justify-between pb-3 mb-3 border-b border-vibe-border">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+          <span class="ml-2 text-slate-400 text-[11px]">vibe-terminal — type `help` for interactive commands</span>
+        </div>
+        <span class="text-xs text-cyan-400 font-semibold flex items-center gap-1">
+          <i data-lucide="terminal" class="w-3.5 h-3.5"></i> CLI Active
+        </span>
+      </div>
+
+      <div id="terminalLog" class="space-y-1.5 text-slate-300 mb-2 max-h-32 overflow-y-auto">
+        <p class="text-slate-400">⚡ Superpowers Vibe Engine Loaded. Try typing: <span class="text-cyan-300">skills</span>, <span class="text-purple-300">edit</span>, <span class="text-emerald-300">projects</span>, <span class="text-amber-300">print</span>, or <span class="text-slate-300">clear</span>.</p>
+      </div>
+
+      <div class="flex items-center gap-2 pt-1 border-t border-vibe-border/60">
+        <span class="text-cyan-400 font-bold">raymond@antigravity:~$</span>
+        <input id="termInput" type="text" placeholder="Gõ lệnh và nhấn Enter..." 
+               class="bg-transparent text-white outline-none flex-1 font-mono text-xs placeholder-slate-600 focus:placeholder-transparent"
+               onkeydown="handleTerminalCommand(event)">
+      </div>
+    </section>
+
+    <!-- Skills & Tech Radar Section -->
+    <section class="print-clean p-6 sm:p-7 rounded-2xl bg-vibe-card/90 border border-vibe-border space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold tracking-wide text-white uppercase flex items-center gap-2">
+          <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i> Kỹ Năng & Hệ Sinh Thái Công Nghệ
+        </h2>
+        <span class="text-[11px] font-mono text-slate-400 no-print">Click vào thẻ để lọc dự án tương ứng</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Frontend -->
+        <div class="p-4 rounded-xl bg-vibe-bg/60 border border-vibe-border space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono font-semibold text-cyan-300">
+            <span>Frontend Architecture</span>
+            <i data-lucide="layout" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="skillGroupFrontend">
+            <button onclick="filterProjectsByTag('React')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-cyan-400 text-slate-200 border border-vibe-border transition">React</button>
+            <button onclick="filterProjectsByTag('Next.js')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-cyan-400 text-slate-200 border border-vibe-border transition">Next.js</button>
+            <button onclick="filterProjectsByTag('TypeScript')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-cyan-400 text-slate-200 border border-vibe-border transition">TypeScript</button>
+            <button onclick="filterProjectsByTag('Tailwind')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-cyan-400 text-slate-200 border border-vibe-border transition">Tailwind</button>
+          </div>
+        </div>
+
+        <!-- Backend -->
+        <div class="p-4 rounded-xl bg-vibe-bg/60 border border-vibe-border space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono font-semibold text-purple-300">
+            <span>Backend & Database</span>
+            <i data-lucide="database" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="skillGroupBackend">
+            <button onclick="filterProjectsByTag('Node.js')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-purple-400 text-slate-200 border border-vibe-border transition">Node.js</button>
+            <button onclick="filterProjectsByTag('PostgreSQL')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-purple-400 text-slate-200 border border-vibe-border transition">PostgreSQL</button>
+            <button onclick="filterProjectsByTag('GraphQL')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-purple-400 text-slate-200 border border-vibe-border transition">GraphQL</button>
+            <button onclick="filterProjectsByTag('Redis')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-purple-400 text-slate-200 border border-vibe-border transition">Redis</button>
+          </div>
+        </div>
+
+        <!-- AI & Superpower Tools -->
+        <div class="p-4 rounded-xl bg-vibe-bg/60 border border-vibe-border space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono font-semibold text-emerald-300">
+            <span>AI & Vibe Tools</span>
+            <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="skillGroupAI">
+            <button onclick="filterProjectsByTag('Antigravity')" class="px-2 py-1 text-xs rounded-md bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition">Antigravity</button>
+            <button onclick="filterProjectsByTag('Gemini AI')" class="px-2 py-1 text-xs rounded-md bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition">Gemini AI</button>
+            <button onclick="filterProjectsByTag('Superpowers')" class="px-2 py-1 text-xs rounded-md bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 transition">Superpowers</button>
+            <button onclick="filterProjectsByTag('Prompting')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-emerald-400 text-slate-200 border border-vibe-border transition">Prompting</button>
+          </div>
+        </div>
+
+        <!-- DevOps & Quality -->
+        <div class="p-4 rounded-xl bg-vibe-bg/60 border border-vibe-border space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono font-semibold text-amber-300">
+            <span>DevOps & Testing</span>
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="skillGroupDevops">
+            <button onclick="filterProjectsByTag('Docker')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-amber-400 text-slate-200 border border-vibe-border transition">Docker</button>
+            <button onclick="filterProjectsByTag('CI/CD')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-amber-400 text-slate-200 border border-vibe-border transition">CI/CD</button>
+            <button onclick="filterProjectsByTag('Vitest/Jest')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-amber-400 text-slate-200 border border-vibe-border transition">Vitest/Jest</button>
+            <button onclick="filterProjectsByTag('Git')" class="px-2 py-1 text-xs rounded-md bg-vibe-card hover:border-amber-400 text-slate-200 border border-vibe-border transition">Git</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Featured Projects Section -->
+    <section class="print-clean p-6 sm:p-7 rounded-2xl bg-vibe-card/90 border border-vibe-border space-y-6">
+      
+      <!-- Section Header + Filter Buttons -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 class="text-sm font-semibold tracking-wide text-white uppercase flex items-center gap-2">
+          <i data-lucide="folder-git-2" class="w-4 h-4 text-purple-400"></i> Dự Án Nổi Bật & Sản Phẩm Thực Tế
+        </h2>
+
+        <!-- Interactive Category Filters -->
+        <div class="no-print flex flex-wrap items-center gap-1.5 text-xs font-mono" id="projectFilterGroup">
+          <button onclick="filterProjects('all')" class="project-filter-btn active px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition">Tất Cả</button>
+          <button onclick="filterProjects('frontend')" class="project-filter-btn px-2.5 py-1 rounded-md bg-vibe-bg text-slate-400 hover:text-white border border-vibe-border transition">Frontend</button>
+          <button onclick="filterProjects('fullstack')" class="project-filter-btn px-2.5 py-1 rounded-md bg-vibe-bg text-slate-400 hover:text-white border border-vibe-border transition">Full-Stack</button>
+          <button onclick="filterProjects('ai')" class="project-filter-btn px-2.5 py-1 rounded-md bg-vibe-bg text-slate-400 hover:text-white border border-vibe-border transition">AI & Automation</button>
+        </div>
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="projectsContainer">
+        
+        <!-- Project 1 -->
+        <div class="project-card p-5 rounded-xl bg-vibe-bg/70 border border-vibe-border hover:border-cyan-500/60 transition duration-300 space-y-3 group"
+             data-category="ai" data-tags="Antigravity,Gemini AI,Next.js,TypeScript">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 contenteditable="false" data-editable="true" class="text-sm font-bold text-white group-hover:text-cyan-400 transition">
+                Antigravity AI Code Companion
+              </h3>
+              <p class="text-[11px] font-mono text-cyan-400/90">Autonomous Dev Tool & Refactoring Agent</p>
+            </div>
+            <button onclick="showProjectPreview('Antigravity AI Code Companion', 'Hệ thống tự động phân tích repository, tạo unit test theo phương pháp TDD và viết tài liệu kỹ thuật tự động thông qua Antigravity và Gemini 3.8 Flash.', ['Next.js', 'Antigravity', 'Gemini AI', 'TypeScript'], 'https://github.com/raymondokok/antigravity-companion')"
+                    class="no-print p-1.5 rounded-lg bg-vibe-card border border-vibe-border text-slate-400 hover:text-white hover:border-cyan-400 transition" title="Xem chi tiết">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <p contenteditable="false" data-editable="true" class="text-xs text-slate-300 leading-relaxed">
+            Nền tảng mở rộng năng lực lập trình cho developer, áp dụng phương pháp Superpowers để lập kế hoạch phát triển tự động và kiểm thử nghiêm ngặt trước khi commit code.
+          </p>
+
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-cyan-300 border border-cyan-800/40">Next.js</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-emerald-300 border border-emerald-800/40">Antigravity</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-purple-300 border border-purple-800/40">Gemini AI</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-slate-300 border border-vibe-border">TypeScript</span>
+          </div>
+        </div>
+
+        <!-- Project 2 -->
+        <div class="project-card p-5 rounded-xl bg-vibe-bg/70 border border-vibe-border hover:border-purple-500/60 transition duration-300 space-y-3 group"
+             data-category="fullstack" data-tags="React,Node.js,PostgreSQL,Tailwind,GraphQL">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 contenteditable="false" data-editable="true" class="text-sm font-bold text-white group-hover:text-purple-400 transition">
+                Vibe Analytics Real-time Dashboard
+              </h3>
+              <p class="text-[11px] font-mono text-purple-400/90">SaaS Metrics & Live WebSocket Telemetry</p>
+            </div>
+            <button onclick="showProjectPreview('Vibe Analytics Real-time Dashboard', 'Hệ thống dashboard giám sát lưu lượng và chuyển đổi người dùng thời gian thực, phục vụ trên 50,000 sự kiện/giây với kiến trúc Redis cache và PostgreSQL.', ['React', 'Node.js', 'PostgreSQL', 'GraphQL'], 'https://github.com/raymondokok/vibe-analytics')"
+                    class="no-print p-1.5 rounded-lg bg-vibe-card border border-vibe-border text-slate-400 hover:text-white hover:border-purple-400 transition" title="Xem chi tiết">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <p contenteditable="false" data-editable="true" class="text-xs text-slate-300 leading-relaxed">
+            Hệ thống dashboard quản trị doanh số và luồng hành vi khách hàng với thời gian phản hồi sub-100ms. Hỗ trợ biểu đồ trực quan, phân quyền RBAC và xuất báo cáo tự động.
+          </p>
+
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-purple-300 border border-purple-800/40">React</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-cyan-300 border border-cyan-800/40">Node.js</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-slate-300 border border-vibe-border">PostgreSQL</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-emerald-300 border border-emerald-800/40">GraphQL</span>
+          </div>
+        </div>
+
+        <!-- Project 3 -->
+        <div class="project-card p-5 rounded-xl bg-vibe-bg/70 border border-vibe-border hover:border-emerald-500/60 transition duration-300 space-y-3 group"
+             data-category="frontend" data-tags="React,TypeScript,Tailwind">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 contenteditable="false" data-editable="true" class="text-sm font-bold text-white group-hover:text-emerald-400 transition">
+                Interactive Design System Kit
+              </h3>
+              <p class="text-[11px] font-mono text-emerald-400/90">Accessible UI Component Library</p>
+            </div>
+            <button onclick="showProjectPreview('Interactive Design System Kit', 'Bộ thư viện UI component chuẩn WAI-ARIA với Tailwind CSS, tối ưu trải nghiệm gõ phím và tương tác mượt mà cho các ứng dụng SaaS hiện đại.', ['React', 'TypeScript', 'Tailwind'], 'https://github.com/raymondokok/design-system')"
+                    class="no-print p-1.5 rounded-lg bg-vibe-card border border-vibe-border text-slate-400 hover:text-white hover:border-emerald-400 transition" title="Xem chi tiết">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <p contenteditable="false" data-editable="true" class="text-xs text-slate-300 leading-relaxed">
+            Bộ thư viện giao diện gồm 40+ linh kiện có khả năng tái sử dụng cao, hỗ trợ đa ngôn ngữ, dark mode và tối ưu kích thước bundle size dưới 25KB gzipped.
+          </p>
+
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-emerald-300 border border-emerald-800/40">React</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-cyan-300 border border-cyan-800/40">TypeScript</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-slate-300 border border-vibe-border">Tailwind</span>
+          </div>
+        </div>
+
+        <!-- Project 4 -->
+        <div class="project-card p-5 rounded-xl bg-vibe-bg/70 border border-vibe-border hover:border-amber-500/60 transition duration-300 space-y-3 group"
+             data-category="ai" data-tags="Node.js,Docker,CI/CD,Antigravity,Gemini AI">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 contenteditable="false" data-editable="true" class="text-sm font-bold text-white group-hover:text-amber-400 transition">
+                Superpowers TDD Pipeline
+              </h3>
+              <p class="text-[11px] font-mono text-amber-400/90">Automated Spec-Driven CI/CD</p>
+            </div>
+            <button onclick="showProjectPreview('Superpowers TDD Pipeline', 'Quy trình CI/CD tích hợp kiểm thử tự động, buộc các pull request phải tuân thủ chuẩn spec và vượt qua kiểm thử đơn vị trước khi merge.', ['Node.js', 'Docker', 'CI/CD', 'Antigravity'], 'https://github.com/raymondokok/superpowers-pipeline')"
+                    class="no-print p-1.5 rounded-lg bg-vibe-card border border-vibe-border text-slate-400 hover:text-white hover:border-amber-400 transition" title="Xem chi tiết">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <p contenteditable="false" data-editable="true" class="text-xs text-slate-300 leading-relaxed">
+            Hệ thống pipeline tự động hóa dựa trên phương pháp luận Superpowers, loại bỏ hoàn toàn các lỗi hồi quy trong quá trình phát triển nhanh bằng Vibe Coding.
+          </p>
+
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-amber-300 border border-amber-800/40">CI/CD</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-cyan-300 border border-cyan-800/40">Docker</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-vibe-card text-emerald-300 border border-emerald-800/40">Antigravity</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Work Experience (Timeline) Section -->
+    <section class="print-clean p-6 sm:p-7 rounded-2xl bg-vibe-card/90 border border-vibe-border space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold tracking-wide text-white uppercase flex items-center gap-2">
+          <i data-lucide="briefcase" class="w-4 h-4 text-emerald-400"></i> Kinh Nghiệm Làm Việc & Thành Tích
+        </h2>
+        <span class="text-xs font-mono text-slate-400">Đã sắp xếp theo thời gian mới nhất</span>
+      </div>
+
+      <div class="space-y-6" id="experienceTimeline">
+        
+        <!-- Job 1 -->
+        <div class="relative pl-6 border-l-2 border-vibe-border space-y-2">
+          <span class="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-cyan-400 ring-4 ring-vibe-card shadow-glow-cyan"></span>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <h3 contenteditable="false" data-editable="true" class="text-base font-bold text-white">
+              Senior Full-Stack & AI Engineer
+            </h3>
+            <span contenteditable="false" data-editable="true" class="text-xs font-mono text-cyan-300 bg-cyan-950/60 px-2.5 py-0.5 rounded border border-cyan-800/40 w-fit">
+              2023 - Hiện tại
+            </span>
+          </div>
+          
+          <p contenteditable="false" data-editable="true" class="text-xs font-medium text-slate-400">
+            Nexus Tech Innovation • TP. Hồ Chí Minh (Hybrid)
+          </p>
+          
+          <ul class="text-xs sm:text-sm text-slate-300 space-y-1.5 list-disc list-inside">
+            <li contenteditable="false" data-editable="true">Dẫn dắt quy trình phát triển sản phẩm theo phong cách Vibe Coding, nâng cao 40% hiệu suất xuất xưởng tính năng mới.</li>
+            <li contenteditable="false" data-editable="true">Kiến trúc hạ tầng microservices với Node.js, Next.js và PostgreSQL phục vụ hơn 80,000 active users hàng ngày.</li>
+            <li contenteditable="false" data-editable="true">Áp dụng bộ tiêu chuẩn kiểm thử Superpowers TDD giúp giảm thiểu 65% lỗi hồi quy trên môi trường production.</li>
+          </ul>
+        </div>
+
+        <!-- Job 2 -->
+        <div class="relative pl-6 border-l-2 border-vibe-border space-y-2">
+          <span class="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-purple-400 ring-4 ring-vibe-card shadow-glow-purple"></span>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <h3 contenteditable="false" data-editable="true" class="text-base font-bold text-white">
+              Full-Stack Web Developer
+            </h3>
+            <span contenteditable="false" data-editable="true" class="text-xs font-mono text-purple-300 bg-purple-950/60 px-2.5 py-0.5 rounded border border-purple-800/40 w-fit">
+              2021 - 2023
+            </span>
+          </div>
+          
+          <p contenteditable="false" data-editable="true" class="text-xs font-medium text-slate-400">
+            Apex Software Solutions • TP. Hồ Chí Minh
+          </p>
+          
+          <ul class="text-xs sm:text-sm text-slate-300 space-y-1.5 list-disc list-inside">
+            <li contenteditable="false" data-editable="true">Xây dựng ứng dụng quản lý doanh nghiệp tích hợp hệ thống thanh toán quốc tế và phân quyền nhiều chi nhánh.</li>
+            <li contenteditable="false" data-editable="true">Tối ưu hoá hiệu năng Frontend React, cải thiện chỉ số Core Web Vitals và đạt 98 điểm Google Lighthouse.</li>
+            <li contenteditable="false" data-editable="true">Cố vấn và hướng dẫn kỹ thuật cho các kỹ sư mới gia nhập đội ngũ dự án.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Education & Certifications Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Education -->
+      <section class="print-clean p-6 rounded-2xl bg-vibe-card/90 border border-vibe-border space-y-3">
+        <h2 class="text-sm font-semibold tracking-wide text-white uppercase flex items-center gap-2">
+          <i data-lucide="graduation-cap" class="w-4 h-4 text-amber-400"></i> Học Vấn
+        </h2>
+        <div class="text-xs space-y-1">
+          <p contenteditable="false" data-editable="true" class="font-bold text-white text-sm">
+            Cử nhân Công nghệ Thông tin (Khoa học Máy tính)
+          </p>
+          <p contenteditable="false" data-editable="true" class="text-slate-400">
+            Đại học Công nghệ / Đại học Bách Khoa TP.HCM
+          </p>
+          <p contenteditable="false" data-editable="true" class="font-mono text-cyan-400">
+            2017 - 2021 • Tốt nghiệp loại Giỏi
+          </p>
+        </div>
+      </section>
+
+      <!-- Certifications -->
+      <section class="print-clean p-6 rounded-2xl bg-vibe-card/90 border border-vibe-border space-y-3">
+        <h2 class="text-sm font-semibold tracking-wide text-white uppercase flex items-center gap-2">
+          <i data-lucide="award" class="w-4 h-4 text-cyan-400"></i> Chứng Chỉ & Ngoại Ngữ
+        </h2>
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span contenteditable="false" data-editable="true" class="text-slate-300 font-medium">AWS Certified Solutions Architect</span>
+            <span contenteditable="false" data-editable="true" class="font-mono text-slate-500">2023</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span contenteditable="false" data-editable="true" class="text-slate-300 font-medium">Tiếng Anh (IELTS 7.5 / Giao tiếp chuyên nghiệp)</span>
+            <span contenteditable="false" data-editable="true" class="font-mono text-emerald-400">Thành thạo</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="no-print text-center pt-4 pb-10 text-xs font-mono text-slate-500 space-y-2">
+      <p>✦ Powered by Superpowers Workflow on Google Antigravity ✦</p>
+      <p class="text-[11px] text-slate-600">
+        Bạn có thể bấm <strong>"Sửa Trực Tiếp"</strong> ở góc trên để tùy ý thay đổi bất kỳ dòng chữ nào và nhấn <strong>"Lưu Local"</strong>.
+      </p>
+    </footer>
+
+  </main>
+
+  <!-- Interactive Project Preview Modal -->
+  <div id="projectModal" class="no-print fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-vibe-card border border-vibe-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative transform scale-95 transition-transform duration-200" id="modalBox">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="text-[10px] font-mono text-cyan-400 uppercase tracking-wider">Project Deep Dive</span>
+          <h3 id="modalTitle" class="text-lg font-bold text-white mt-0.5">Tiêu đề dự án</h3>
+        </div>
+        <button onclick="closeProjectModal()" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-vibe-bg transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p id="modalDesc" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono text-slate-400">Công nghệ sử dụng:</span>
+        <div id="modalTags" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <div class="pt-3 border-t border-vibe-border flex items-center justify-end gap-2">
+        <a id="modalLink" href="#" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span>Xem Kho Mã Nguồn</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-side Logic (Edit Mode, LocalStorage, Terminal, Filters) -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    let isEditing = false;
+    const STORAGE_KEY = 'vibe_coder_cv_data_v1';
+
+    // Toggle Edit Mode
+    function toggleEditMode() {
+      isEditing = !isEditing;
+      const body = document.body;
+      const btn = document.getElementById('toggleEditBtn');
+      const btnText = document.getElementById('btnEditText');
+      const saveBtn = document.getElementById('saveDataBtn');
+      const resetBtn = document.getElementById('resetDataBtn');
+      const statusText = document.getElementById('editStatusText');
+      const editables = document.querySelectorAll('[data-editable="true"]');
+
+      if (isEditing) {
+        body.classList.add('is-editing');
+        btnText.innerText = 'Đang Bật Sửa';
+        btn.classList.add('bg-cyan-500/30', 'text-cyan-200');
+        saveBtn.classList.remove('hidden');
+        resetBtn.classList.remove('hidden');
+        statusText.innerText = 'Đang ở Chế độ Sửa (Click trực tiếp vào chữ để gõ)';
+        statusText.classList.add('text-cyan-400');
+
+        editables.forEach(el => el.setAttribute('contenteditable', 'true'));
+        showToast('Chế độ sửa trực tiếp đã BẬT. Bạn có thể click vào bất kỳ mục nào để gõ lại!', 'info');
+      } else {
+        body.classList.remove('is-editing');
+        btnText.innerText = 'Sửa Trực Tiếp';
+        btn.classList.remove('bg-cyan-500/30', 'text-cyan-200');
+        saveBtn.classList.add('hidden');
+        resetBtn.classList.add('hidden');
+        statusText.innerText = 'Chế độ Xem (Nhấn "Sửa Trực Tiếp" để đổi nội dung)';
+        statusText.classList.remove('text-cyan-400');
+
+        editables.forEach(el => el.setAttribute('contenteditable', 'false'));
+        saveCVData();
+      }
+    }
+
+    // Save CV Data to LocalStorage
+    function saveCVData() {
+      const data = {};
+      const editables = document.querySelectorAll('[data-editable="true"]');
+      editables.forEach((el, index) => {
+        const id = el.id || `field_${index}`;
+        data[id] = el.innerHTML;
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      showToast('Đã lưu dữ liệu CV vào trình duyệt thành công!', 'success');
+      appendTerminal('Dữ liệu đã được lưu trữ cục bộ (LocalStorage).');
+    }
+
+    // Load Saved CV Data
+    function loadSavedData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        const editables = document.querySelectorAll('[data-editable="true"]');
+        editables.forEach((el, index) => {
+          const id = el.id || `field_${index}`;
+          if (data[id]) {
+            el.innerHTML = data[id];
+          }
+        });
+      } catch (e) {
+        console.error('Không thể load dữ liệu cũ:', e);
+      }
+    }
+
+    // Reset to Default
+    function resetDefaultData() {
+      if (confirm('Bạn có chắc chắn muốn xóa dữ liệu chỉnh sửa và quay về bản mẫu ban đầu?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+      }
+    }
+
+    // Prepare and Print PDF
+    function prepareAndPrint() {
+      if (isEditing) {
+        toggleEditMode(); // Turn off edit borders before print
+      }
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    }
+
+    // Filter Projects
+    function filterProjects(category) {
+      // Update active filter button
+      const buttons = document.querySelectorAll('.project-filter-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
+        btn.classList.add('bg-vibe-bg', 'text-slate-400', 'border-vibe-border');
+      });
+      event.target.classList.add('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
+      event.target.classList.remove('bg-vibe-bg', 'text-slate-400', 'border-vibe-border');
+
+      const cards = document.querySelectorAll('.project-card');
+      cards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      appendTerminal(`Đã lọc dự án theo chuyên mục: ${category}`);
+    }
+
+    // Filter by Specific Tag
+    function filterProjectsByTag(tag) {
+      const cards = document.querySelectorAll('.project-card');
+      let count = 0;
+      cards.forEach(card => {
+        const tags = card.dataset.tags || '';
+        if (tags.toLowerCase().includes(tag.toLowerCase())) {
+          card.style.display = 'block';
+          count++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      showToast(`Đã lọc ${count} dự án sử dụng ${tag}`, 'info');
+      appendTerminal(`Tìm thấy ${count} dự án liên quan đến thẻ: ${tag}`);
+    }
+
+    // Show Project Modal
+    function showProjectPreview(title, desc, tags, link) {
+      const modal = document.getElementById('projectModal');
+      const box = document.getElementById('modalBox');
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalDesc').innerText = desc;
+      
+      const tagsContainer = document.getElementById('modalTags');
+      tagsContainer.innerHTML = '';
+      tags.forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'px-2 py-0.5 text-xs font-mono rounded bg-vibe-bg border border-vibe-border text-cyan-300';
+        span.innerText = t;
+        tagsContainer.appendChild(span);
+      });
+
+      const modalLink = document.getElementById('modalLink');
+      modalLink.href = link;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        box.classList.remove('scale-95');
+        box.classList.add('scale-100');
+      }, 10);
+    }
+
+    function closeProjectModal() {
+      const modal = document.getElementById('projectModal');
+      const box = document.getElementById('modalBox');
+      modal.classList.add('opacity-0');
+      box.classList.remove('scale-100');
+      box.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    // Terminal Command Handler
+    function handleTerminalCommand(e) {
+      if (e.key !== 'Enter') return;
+      const input = document.getElementById('termInput');
+      const val = input.value.trim().toLowerCase();
+      if (!val) return;
+
+      appendTerminal(`<span class="text-cyan-400">raymond@antigravity:~$</span> ${input.value}`);
+      input.value = '';
+
+      switch (val) {
+        case 'help':
+          appendTerminal(`Lệnh có sẵn:
+  - <b>edit</b>: Bật / tắt chế độ sửa trực tiếp
+  - <b>save</b>: Lưu nội dung CV vào LocalStorage
+  - <b>skills</b>: Hiển thị tóm tắt năng lực cốt lõi
+  - <b>projects</b>: Reset danh sách hiển thị tất cả dự án
+  - <b>print</b> / <b>pdf</b>: Mở cửa sổ in ấn xuất PDF
+  - <b>clear</b>: Xoá lịch sử màn hình terminal`);
+          break;
+        case 'edit':
+          toggleEditMode();
+          break;
+        case 'save':
+          saveCVData();
+          break;
+        case 'skills':
+          appendTerminal(`Stack chính: Next.js, React, Node.js, TypeScript, PostgreSQL, Antigravity, Gemini API.`);
+          break;
+        case 'projects':
+          filterProjects('all');
+          break;
+        case 'print':
+        case 'pdf':
+          prepareAndPrint();
+          break;
+        case 'clear':
+          document.getElementById('terminalLog').innerHTML = '';
+          break;
+        default:
+          appendTerminal(`Lệnh không nhận dạng: "${val}". Gõ <b>help</b> để xem danh sách lệnh.`);
+      }
+    }
+
+    function appendTerminal(html) {
+      const log = document.getElementById('terminalLog');
+      const p = document.createElement('p');
+      p.className = 'text-slate-300 leading-relaxed';
+      p.innerHTML = html;
+      log.appendChild(p);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // Toast Notification
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const borderColor = type === 'success' ? 'border-emerald-500/50 text-emerald-300' : 'border-cyan-500/50 text-cyan-300';
+      toast.className = `toast-anim pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-vibe-card border ${borderColor} shadow-2xl text-xs font-mono font-medium backdrop-blur-md`;
+      
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-emerald-400' : 'bg-cyan-400'}"></span>
+        <span>${msg}</span>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedData();
+    });
+  </script>
+</body>
+</html>
