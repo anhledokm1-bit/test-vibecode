@@ -17,3 +17,4 @@ Chỉ cần mở file `index.html` bằng bất kỳ trình duyệt nào:
 ```bash
 open index.html
 ```
+
